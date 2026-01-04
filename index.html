@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Velha Moderno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #1a1a1a;
+            color: #ffffff;
+        }
+
+        .cell {
+            transition: all 0.3s ease;
+        }
+
+        /* Efeito de brilho para X */
+        .text-neon-blue {
+            color: #3b82f6;
+            text-shadow: 0 0 10px rgba(59, 130, 246, 0.7);
+        }
+
+        /* Efeito de brilho para O */
+        .text-neon-pink {
+            color: #ec4899;
+            text-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+        }
+
+        .winning-cell {
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Cabeçalho -->
+    <div class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-pink-500">
+            Jogo da Velha
+        </h1>
+        <p class="text-gray-400">Desafie um amigo!</p>
+    </div>
+
+    <!-- Placar e Status -->
+    <div class="flex justify-between w-full max-w-sm mb-6 bg-gray-800 rounded-lg p-4 shadow-lg">
+        <div class="text-center">
+            <span class="block text-sm text-gray-400">Jogador X</span>
+            <span id="scoreX" class="text-xl font-bold text-blue-400">0</span>
+        </div>
+        <div class="text-center">
+            <span class="block text-sm text-gray-400">Empates</span>
+            <span id="scoreDraw" class="text-xl font-bold text-gray-300">0</span>
+        </div>
+        <div class="text-center">
+            <span class="block text-sm text-gray-400">Jogador O</span>
+            <span id="scoreO" class="text-xl font-bold text-pink-400">0</span>
+        </div>
+    </div>
+
+    <!-- Status da Vez -->
+    <div id="statusMessage" class="mb-6 text-xl font-semibold text-blue-400">
+        Vez do Jogador X
+    </div>
+
+    <!-- Tabuleiro -->
+    <div class="grid grid-cols-3 gap-3 bg-gray-700 p-3 rounded-xl shadow-2xl mb-8">
+        <!-- As células são geradas aqui -->
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(0)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(1)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(2)"></button>
+
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(3)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(4)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(5)"></button>
+
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(6)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(7)"></button>
+        <button class="cell w-20 h-20 md:w-24 md:h-24 bg-gray-800 rounded-lg text-4xl md:text-5xl font-bold flex items-center justify-center hover:bg-gray-750 focus:outline-none" onclick="makeMove(8)"></button>
+    </div>
+
+    <!-- Botão Reiniciar -->
+    <button onclick="resetGame()" class="px-6 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full font-bold shadow-lg transform hover:scale-105 transition duration-200 hover:shadow-purple-500/50">
+        Reiniciar Jogo
+    </button>
+
+    <script>
+        let currentPlayer = 'X';
+        let gameActive = true;
+        let gameState = ["", "", "", "", "", "", "", "", ""];
+
+        let scores = {
+            X: 0,
+            O: 0,
+            Draw: 0
+        };
+
+        const statusDisplay = document.getElementById('statusMessage');
+        const cells = document.querySelectorAll('.cell');
+        const scoreXEl = document.getElementById('scoreX');
+        const scoreOEl = document.getElementById('scoreO');
+        const scoreDrawEl = document.getElementById('scoreDraw');
+
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // Linhas
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // Colunas
+            [0, 4, 8], [2, 4, 6]             // Diagonais
+        ];
+
+        function makeMove(cellIndex) {
+            const clickedCell = cells[cellIndex];
+
+            if (gameState[cellIndex] !== "" || !gameActive) {
+                return;
+            }
+
+            handleCellPlayed(clickedCell, cellIndex);
+            handleResultValidation();
+        }
+
+        function handleCellPlayed(clickedCell, cellIndex) {
+            gameState[cellIndex] = currentPlayer;
+            clickedCell.innerHTML = currentPlayer;
+
+            // Adiciona cor baseada no jogador
+            if (currentPlayer === 'X') {
+                clickedCell.classList.add('text-neon-blue');
+            } else {
+                clickedCell.classList.add('text-neon-pink');
+            }
+        }
+
+        function handleResultValidation() {
+            let roundWon = false;
+            let winningLine = [];
+
+            for (let i = 0; i <= 7; i++) {
+                const winCondition = winningConditions[i];
+                let a = gameState[winCondition[0]];
+                let b = gameState[winCondition[1]];
+                let c = gameState[winCondition[2]];
+
+                if (a === '' || b === '' || c === '') {
+                    continue;
+                }
+                if (a === b && b === c) {
+                    roundWon = true;
+                    winningLine = winCondition;
+                    break;
+                }
+            }
+
+            if (roundWon) {
+                statusDisplay.innerHTML = `Vitória do Jogador <span class="${currentPlayer === 'X' ? 'text-blue-400' : 'text-pink-400'}">${currentPlayer}</span>!`;
+                gameActive = false;
+                updateScore(currentPlayer);
+                highlightWinningCells(winningLine);
+                return;
+            }
+
+            let roundDraw = !gameState.includes("");
+            if (roundDraw) {
+                statusDisplay.innerText = "Empate!";
+                statusDisplay.classList.remove('text-blue-400', 'text-pink-400');
+                statusDisplay.classList.add('text-gray-300');
+                gameActive = false;
+                updateScore('Draw');
+                return;
+            }
+
+            handlePlayerChange();
+        }
+
+        function highlightWinningCells(indices) {
+            indices.forEach(index => {
+                cells[index].classList.add('winning-cell');
+            });
+        }
+
+        function handlePlayerChange() {
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusDisplay.innerHTML = `Vez do Jogador <span class="${currentPlayer === 'X' ? 'text-blue-400' : 'text-pink-400'}">${currentPlayer}</span>`;
+
+            // Atualiza cor do texto de status
+            statusDisplay.className = `mb-6 text-xl font-semibold ${currentPlayer === 'X' ? 'text-blue-400' : 'text-pink-400'}`;
+        }
+
+        function updateScore(winner) {
+            scores[winner]++;
+            if (winner === 'X') scoreXEl.innerText = scores.X;
+            else if (winner === 'O') scoreOEl.innerText = scores.O;
+            else scoreDrawEl.innerText = scores.Draw;
+        }
+
+        function resetGame() {
+            gameActive = true;
+            currentPlayer = "X";
+            gameState = ["", "", "", "", "", "", "", "", ""];
+            statusDisplay.innerHTML = `Vez do Jogador <span class="text-blue-400">X</span>`;
+            statusDisplay.className = "mb-6 text-xl font-semibold text-blue-400";
+
+            cells.forEach(cell => {
+                cell.innerHTML = "";
+                cell.classList.remove('text-neon-blue', 'text-neon-pink', 'winning-cell');
+            });
+        }
+    </script>
+</body>
+</html>
